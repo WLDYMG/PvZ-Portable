@@ -297,13 +297,14 @@ jobs:
 
         cmake -B $BUILD_DIR \
           -DCMAKE_TOOLCHAIN_FILE=$VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake \
-          -DVCPKG_TARGET_TRIPLET=armeabi-v7a \
+          -DVCPKG_TARGET_TRIPLET=arm-android \
           -DVCPKG_CMAKE_SYSTEM_VERSION=$ANDROID_API \
           -DVCPKG_CHAINLOAD_TOOLCHAIN_FILE=$ANDROID_NDK/build/cmake/android.toolchain.cmake \
           -DANDROID_ABI=$ABI \
           -DANDROID_PLATFORM=android-$ANDROID_API \
           -DSDL2_DIR=$SDL2_PREFIX/lib/cmake/SDL2 \
-          -DCMAKE_BUILD_TYPE=Release
+          -DCMAKE_BUILD_TYPE=Release \
+          -DCMAKE_MAKE_PROGRAM=$(which ninja)
 
         cmake --build $BUILD_DIR -j$(nproc)
 
