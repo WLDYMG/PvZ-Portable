@@ -297,7 +297,7 @@ jobs:
 
         cmake -B $BUILD_DIR \
           -DCMAKE_TOOLCHAIN_FILE=$VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake \
-          -DVCPKG_TARGET_TRIPLET=arm64-android \
+          -DVCPKG_TARGET_TRIPLET=armeabi-v7a \
           -DVCPKG_CMAKE_SYSTEM_VERSION=$ANDROID_API \
           -DVCPKG_CHAINLOAD_TOOLCHAIN_FILE=$ANDROID_NDK/build/cmake/android.toolchain.cmake \
           -DANDROID_ABI=$ABI \
