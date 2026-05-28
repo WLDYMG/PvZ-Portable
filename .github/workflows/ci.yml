@@ -242,13 +242,11 @@ jobs:
 
     - name: Install Android NDK
       run: |
-        # Use the latest NDK available on the runner
         if [ -n "$ANDROID_NDK_LATEST_HOME" ] && [ -d "$ANDROID_NDK_LATEST_HOME" ]; then
           echo "ANDROID_NDK=$ANDROID_NDK_LATEST_HOME" >> "$GITHUB_ENV"
           echo "ANDROID_NDK_HOME=$ANDROID_NDK_LATEST_HOME" >> "$GITHUB_ENV"
           echo "Using pre-installed NDK: $ANDROID_NDK_LATEST_HOME"
         else
-          # Fallback: install via sdkmanager
           yes | sdkmanager --install "ndk;$(sdkmanager --list 2>/dev/null | grep -oP 'ndk;\K[\d.]+' | sort -V | tail -1)" || true
           NDK_DIR=$(ls -d "$ANDROID_HOME"/ndk/*/ 2>/dev/null | sort -V | tail -1)
           echo "ANDROID_NDK=${NDK_DIR%/}" >> "$GITHUB_ENV"
@@ -260,7 +258,7 @@ jobs:
         SDL2_TAG=$(git ls-remote --tags https://github.com/libsdl-org/SDL.git 'refs/tags/release-2.*' \
           | sed 's|.*refs/tags/release-||' | sort -V | tail -1)
         if [ -z "$SDL2_TAG" ]; then
-          SDL2_TAG="2.32.10" # Fallback to a known stable version if tag retrieval fails
+          SDL2_TAG="2.32.10"
         fi
         echo "Using SDL2 version: $SDL2_TAG"
         wget -q "https://github.com/libsdl-org/SDL/releases/download/release-${SDL2_TAG}/SDL2-${SDL2_TAG}.tar.gz"
@@ -272,32 +270,31 @@ jobs:
       with:
         vcpkgJsonGlob: vcpkg.json
 
-    - name: Build SDL2 Shared Library
+    - name: Build SDL2 and Native Library
       run: |
-        # On Android, SDL2 MUST be a shared library because the Java-side
-        # SDLActivity loads it via System.loadLibrary("SDL2").
+        ABI=armeabi-v7a
+        ANDROID_API=28
+        echo "=== Building for $ABI ==="
         cmake -B build-sdl2 \
           -DCMAKE_TOOLCHAIN_FILE=$ANDROID_NDK/build/cmake/android.toolchain.cmake \
-          -DANDROID_ABI=armeabi-v7a \
-          -DANDROID_PLATFORM=android-28 \
+          -DANDROID_ABI=$ABI \
+          -DANDROID_PLATFORM=android-$ANDROID_API \
           -DSDL_SHARED=ON \
           -DSDL_STATIC=OFF \
           -DCMAKE_INSTALL_PREFIX=$GITHUB_WORKSPACE/sdl2-android \
           -DCMAKE_BUILD_TYPE=Release \
+          -DCMAKE_MAKE_PROGRAM=$(which ninja) \
           sdl2-src
         cmake --build build-sdl2 -j$(nproc)
         cmake --install build-sdl2
-
-    - name: Build Native Library with CMake
-      run: |
-        ABI=armeabi-v7a
-        ANDROID_API=28
+        
         BUILD_DIR=build-android-$ABI
         SDL2_PREFIX=$GITHUB_WORKSPACE/sdl2-android
+        VCPKG_TARGET="arm-android"
 
         cmake -B $BUILD_DIR \
           -DCMAKE_TOOLCHAIN_FILE=$VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake \
-          -DVCPKG_TARGET_TRIPLET=arm-android \
+          -DVCPKG_TARGET_TRIPLET=$VCPKG_TARGET \
           -DVCPKG_CMAKE_SYSTEM_VERSION=$ANDROID_API \
           -DVCPKG_CHAINLOAD_TOOLCHAIN_FILE=$ANDROID_NDK/build/cmake/android.toolchain.cmake \
           -DANDROID_ABI=$ABI \
@@ -307,42 +304,32 @@ jobs:
           -DCMAKE_MAKE_PROGRAM=$(which ninja)
 
         cmake --build $BUILD_DIR -j$(nproc)
-
-        # Collect all shared libraries into jniLibs for Gradle to package
+        
         JNILIBS=android/app/src/main/jniLibs/$ABI
         mkdir -p $JNILIBS
         cp -L $BUILD_DIR/libmain.so $JNILIBS/
-
-        # Copy SDL2 shared library
         cp -L $SDL2_PREFIX/lib/libSDL2*.so $JNILIBS/
-
-        # Copy any .so dependencies from vcpkg (manifest mode installs into build dir)
-        VCPKG_LIB=$BUILD_DIR/vcpkg_installed/arm-android/lib
+        VCPKG_LIB=$BUILD_DIR/vcpkg_installed/$VCPKG_TARGET/lib
         for so in "$VCPKG_LIB"/*.so; do
           [ -f "$so" ] && cp -L "$so" $JNILIBS/
         done
-
-        # Strip debug symbols to reduce APK size
         STRIP=$ANDROID_NDK/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-strip
         for so in "$JNILIBS"/*.so; do
           "$STRIP" --strip-unneeded "$so"
         done
-
-        echo "Collected .so files:"
+        echo "Collected $ABI files: "
         ls -lh $JNILIBS/
 
     - name: Build APK with Gradle
       run: |
         cd android
         echo "sdk.dir=$ANDROID_HOME" > local.properties
-
-        # Use gradle wrapper; package pre-built native libraries into a release APK (debug-signed)
         gradle wrapper
         ./gradlew assembleRelease -PusePrebuiltLibs=true --no-daemon
 
     - name: Copy APK
       run: |
-        mkdir -p dist
+        mkdir dist
         find android -name "*.apk" -path "*/release/*" -exec cp {} dist/pvz-portable-android-armeabi-v7a.apk \;
 
     - name: Upload Artifact
@@ -350,7 +337,7 @@ jobs:
       with:
         name: pvz-portable-android
         path: dist/
-
+        
   build-ios:
     name: Build for iOS (arm64)
     runs-on: macos-latest
