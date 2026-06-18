@@ -39,7 +39,7 @@ struct RegValue
 {
 	uint32_t mType;
 	uint32_t mLength;
-	uint8_t* mValue;
+	std::vector<uint8_t> mValue;
 };
 typedef std::map<std::string, std::map<std::string, RegValue> > RegContents;
 static RegContents registry;
@@ -86,7 +86,7 @@ static void SaveToFile()
 			RegValue& value = valuePair.second;
 			f.write(reinterpret_cast<const char*>(&value.mType), sizeof(uint32_t));
 			f.write(reinterpret_cast<const char*>(&value.mLength), sizeof(uint32_t));
-			f.write(reinterpret_cast<const char*>(value.mValue), value.mLength);
+			f.write(reinterpret_cast<const char*>(value.mValue.data()), value.mLength);
 		}
 	}
 }
@@ -140,8 +140,8 @@ void regemu::SetRegFile(const std::string& fileName)
 
 			if (!f.read(reinterpret_cast<char*>(&value.mType), sizeof(uint32_t))) { return; }
 			if (!f.read(reinterpret_cast<char*>(&value.mLength), sizeof(uint32_t))) { return; }
-			value.mValue = new uint8_t[value.mLength];
-			if (!f.read(reinterpret_cast<char*>(value.mValue), value.mLength)) { delete[] value.mValue; return; }
+			value.mValue.resize(value.mLength);
+			if (!f.read(reinterpret_cast<char*>(value.mValue.data()), value.mLength)) { return; }
 
 			registry[aKeyName.data()][aValueName.data()] = value;
 		}
@@ -165,7 +165,7 @@ bool regemu::RegistryRead(const std::string& keyName, const std::string& valueNa
 
 	*type = registry[keyName][valueName].mType;
 	*length = registry[keyName][valueName].mLength;
-	memcpy(value, registry[keyName][valueName].mValue, registry[keyName][valueName].mLength);
+	memcpy(value, registry[keyName][valueName].mValue.data(), registry[keyName][valueName].mLength);
 	return true;
 }
 
@@ -173,14 +173,12 @@ bool regemu::RegistryWrite(const std::string& keyName, const std::string& valueN
 {
 	if (!registry.count(keyName))
 		registry[keyName] = {}; // create
-	else
-		delete[] registry[keyName][valueName].mValue;
 
 	RegValue regvalue;
 	regvalue.mType = type;
 	regvalue.mLength = length;
-	regvalue.mValue = new uint8_t[length];
-	memcpy(regvalue.mValue, value, length);
+	regvalue.mValue.resize(length);
+	memcpy(regvalue.mValue.data(), value, length);
 
 	registry[keyName][valueName] = regvalue;
 
@@ -193,9 +191,6 @@ bool regemu::RegistryEraseKey(const std::string& keyName)
 {
 	if (!registry.count(keyName))
 		return false;
-
-	for (auto& valuePair : registry[keyName])
-		delete[] valuePair.second.mValue;
 
 	registry.erase(keyName);
 	Sexy::PrintF("RegEmu: Erased key '%s'\n", keyName.c_str());
@@ -210,7 +205,6 @@ bool regemu::RegistryEraseValue(const std::string& keyName, const std::string& v
 	if (!registry.count(keyName) || !registry[keyName].count(valueName))
 		return false;
 
-	delete[] registry[keyName][valueName].mValue;
 	registry[keyName].erase(valueName);
 	Sexy::PrintF("RegEmu: Erased value '%s' from key '%s'\n", valueName.c_str(), keyName.c_str());
 
