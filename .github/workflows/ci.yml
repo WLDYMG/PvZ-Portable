@@ -349,7 +349,7 @@ jobs:
       with:
         name: pvz-portable-android
         path: dist/
-        
+
   build-ios:
     name: Build for iOS (arm64)
     runs-on: macos-latest
@@ -487,7 +487,7 @@ jobs:
         cd ../..
 
         echo "Preparing Android file..."
-        mv artifacts/pvz-portable-android/pvz-portable-android-arm64-v8a.apk release_files/pvz-portable-android-arm64-v8a.apk
+        mv artifacts/pvz-portable-android/pvz-portable-android-armeabi-v7a.apk release_files/pvz-portable-android-armeabi-v7a.apk
 
         echo "Preparing iOS file..."
         mv artifacts/pvz-portable-ios/pvz-portable-ios-arm64.ipa release_files/pvz-portable-ios-arm64.ipa
