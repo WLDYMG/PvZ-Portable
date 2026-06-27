@@ -1147,7 +1147,7 @@ static void SyncReanimationPortable(Board* theBoard, Reanimation* theReanimation
 	SyncReanimationDefPortable(theContext, theReanimation->mDefinition);
 	if (theContext.mReading)
 	{
-		theReanimation->mReanimationHolder = theBoard->mApp->mEffectSystem->mReanimationHolder;
+		theReanimation->mReanimationHolder = theBoard->mApp->mEffectSystem->mReanimationHolder.get();
 	}
 
 	ReanimatorDefinition* aDef = theReanimation->mDefinition;
@@ -1313,7 +1313,7 @@ static void SyncParticleSystemPortable(Board* theBoard, TodParticleSystem* thePa
 	SyncParticleDefPortable(theContext, theParticleSystem->mParticleDef);
 	if (theContext.mReading)
 	{
-		theParticleSystem->mParticleHolder = theBoard->mApp->mEffectSystem->mParticleHolder;
+		theParticleSystem->mParticleHolder = theBoard->mApp->mEffectSystem->mParticleHolder.get();
 	}
 
 	SyncDataIDListPortable((TodList<uint32_t>*)&theParticleSystem->mEmitterList, theContext, &theParticleSystem->mParticleHolder->mEmitterListNodeAllocator);
@@ -1335,7 +1335,7 @@ static void SyncTrailPortable(Board* theBoard, Trail* theTrail, PortableSaveCont
 	SyncTrailDefPortable(theContext, theTrail->mDefinition);
 	if (theContext.mReading)
 	{
-		theTrail->mTrailHolder = theBoard->mApp->mEffectSystem->mTrailHolder;
+		theTrail->mTrailHolder = theBoard->mApp->mEffectSystem->mTrailHolder.get();
 	}
 
 	for (int i = 0; i < 20; i++)
@@ -2590,7 +2590,7 @@ static bool LawnLoadGameV4(Board* theBoard, const std::string& theFilePath)
 		return false;
 	if (aHeader.mVersion != SAVE_FILE_V4_VERSION)
 		return false;
-	if (aHeader.mPayloadSize + sizeof(SaveFileHeaderV4) > static_cast<uint32_t>(aBuffer.GetDataLen()))
+	if (aHeader.mPayloadSize > static_cast<uint32_t>(aBuffer.GetDataLen()) - sizeof(SaveFileHeaderV4))
 		return false;
 
 	unsigned char* aPayload = (unsigned char*)aBuffer.GetDataPtr() + sizeof(SaveFileHeaderV4);
@@ -2908,7 +2908,7 @@ static void SyncParticleSystem(Board* theBoard, TodParticleSystem* theParticleSy
 	theContext.SyncParticleDef(theParticleSystem->mParticleDef);
 	if (theContext.mReading)
 	{
-		theParticleSystem->mParticleHolder = theBoard->mApp->mEffectSystem->mParticleHolder;
+		theParticleSystem->mParticleHolder = theBoard->mApp->mEffectSystem->mParticleHolder.get();
 	}
 
 	SyncDataIDList((TodList<uint32_t>*)&theParticleSystem->mEmitterList, theContext, &theParticleSystem->mParticleHolder->mEmitterListNodeAllocator);
@@ -2924,7 +2924,7 @@ static void SyncReanimation(Board* theBoard, Reanimation* theReanimation, SaveGa
 	theContext.SyncReanimationDef(theReanimation->mDefinition);
 	if (theContext.mReading)
 	{
-		theReanimation->mReanimationHolder = theBoard->mApp->mEffectSystem->mReanimationHolder;
+		theReanimation->mReanimationHolder = theBoard->mApp->mEffectSystem->mReanimationHolder.get();
 	}
 
 	if (theReanimation->mDefinition->mTracks.count != 0)
@@ -2962,7 +2962,7 @@ static void SyncTrail(Board* theBoard, Trail* theTrail, SaveGameContext& theCont
 	theContext.SyncTrailDef(theTrail->mDefinition);
 	if (theContext.mReading)
 	{
-		theTrail->mTrailHolder = theBoard->mApp->mEffectSystem->mTrailHolder;
+		theTrail->mTrailHolder = theBoard->mApp->mEffectSystem->mTrailHolder.get();
 	}
 }
 

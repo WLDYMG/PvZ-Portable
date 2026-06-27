@@ -106,6 +106,23 @@ void ContinueDialog::RemovedFromManager(WidgetManager* theWidgetManager)
     RemoveWidget(mNewGameButton);
 }
 
+void ContinueDialog::KeyDown(KeyCode theKey)
+{
+    if (theKey == KeyCode::KEYCODE_ESCAPE)
+    {
+        ButtonDepress(Dialog::ID_FOOTER);
+        return;
+    }
+
+    if (theKey == KeyCode::KEYCODE_RETURN || theKey == KeyCode::KEYCODE_SPACE)
+    {
+        ButtonDepress(ContinueDialog::ContinueDialog_Continue);
+        return;
+    }
+
+    LawnDialog::KeyDown(theKey);
+}
+
 void ContinueDialog::RestartLoopingSounds()
 {
     if (mApp->mGameMode == GameMode::GAMEMODE_CHALLENGE_RAINING_SEEDS || mApp->IsStormyNightLevel())
@@ -150,8 +167,8 @@ void ContinueDialog::ButtonDepress(int theId)
             LawnDialog* aDialog = (LawnDialog*)mApp->DoDialog(
                 Dialogs::DIALOG_RESTARTCONFIRM, 
                 true, 
-                "NEW GAME", 
-                "ARE YOU SURE THAT YUU WANT TO START A NEW GAME?", 
+                "New Game?", 
+                "Are you sure that you want to start a new game?", 
                 "", 
                 Dialog::BUTTONS_OK_CANCEL
             );

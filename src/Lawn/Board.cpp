@@ -3575,8 +3575,7 @@ void Board::UpdateToolTip()
 	}
 	else
 	{
-		// @Patoke: wrong function call
-		mToolTip->SetLabel(Plant::GetNameString(aUseSeedType));
+		mToolTip->SetLabel(Plant::GetNameString(aSeedPacket->mPacketType, aSeedPacket->mImitaterType));
 	}
 
 	int aPlantCost = GetCurrentPlantCost(aSeedPacket->mPacketType, aSeedPacket->mImitaterType);
@@ -3795,7 +3794,7 @@ void Board::MouseDownWithPlant(int x, int y, int theClickCount)
 		else if (aReason == PlantingReason::PLANTING_NOT_ON_ART)
 		{
 			std::string aSeedName = Plant::GetNameString(mChallenge->GetArtChallengeSeed(aGridX, aGridY), SeedType::SEED_NONE);
-			std::string aMessage = TodReplaceString("ADVICE_WRONG_ART_TYPE", "{SEED}", aSeedName);
+			std::string aMessage = TodReplaceString("[ADVICE_WRONG_ART_TYPE]", "{SEED}", aSeedName);
 			DisplayAdvice(aMessage, MessageStyle::MESSAGE_STYLE_HINT_FAST, AdviceType::ADVICE_PLANT_WRONG_ART_TYPE);
 		}
 		else if (aReason == PlantingReason::PLANTING_NEEDS_POT)
@@ -5232,6 +5231,7 @@ void Board::ZombiesWon(Zombie* theZombie)
 
 	GameOverDialog* aGameOverDialog = new GameOverDialog(aGameOverMsg, true);
 	mApp->AddDialog(Dialogs::DIALOG_GAME_OVER, aGameOverDialog);
+	mApp->mWidgetManager->SetFocus(aGameOverDialog);
 
 	mApp->mMusic->StopAllMusic();
 	StopAllZombieSounds();
@@ -7859,7 +7859,6 @@ static void TodCrash()
 	TOD_ASSERT(false, "Crash%s", "!!!!");
 }
 
-//0x41B950（原版中废弃）
 void Board::KeyChar(char theChar)
 {
 	if (!mApp->mDebugKeysEnabled)

@@ -272,7 +272,6 @@ LawnApp::~LawnApp()
 
 	if (mPoolEffect)
 	{
-		mPoolEffect->PoolEffectDispose();
 		delete mPoolEffect;
 	}
 
@@ -283,13 +282,11 @@ LawnApp::~LawnApp()
 
 	if (mEffectSystem)
 	{
-		mEffectSystem->EffectSystemDispose();
 		delete mEffectSystem;
 	}
 
 	if (mReanimatorCache)
 	{
-		mReanimatorCache->ReanimatorCacheDispose();
 		delete mReanimatorCache;
 	}
 
@@ -752,6 +749,7 @@ void LawnApp::DoContinueDialog()
 	ContinueDialog* aDialog = new ContinueDialog(this);
 	CenterDialog(aDialog, aDialog->mWidth, aDialog->mHeight);
 	AddDialog(Dialogs::DIALOG_CONTINUE, aDialog);
+	mWidgetManager->SetFocus(aDialog);
 }
 
 void LawnApp::DoPauseDialog()
@@ -1101,16 +1099,7 @@ void LawnApp::FinishTimesUpDialog()
 // GOTY @Patoke: 0x5282E0
 void LawnApp::DoConfirmSellDialog(const std::string& theMessage)
 {
-	Dialog* aConfirmDialog = DoDialog(Dialogs::DIALOG_ZEN_SELL, true, "[ZEN_SELL_HEADER]", theMessage, "", Dialog::BUTTONS_YES_NO);
-	aConfirmDialog->mYesButton->mLabel = TodStringTranslate("[DIALOG_BUTTON_YES]");
-	aConfirmDialog->mNoButton->mLabel = TodStringTranslate("[DIALOG_BUTTON_NO]");
-}
-
-void LawnApp::DoConfirmPurchaseDialog(const std::string& theMessage)
-{
-	LawnDialog* aComfirmDialog = (LawnDialog*)DoDialog(Dialogs::DIALOG_STORE_PURCHASE, true, "买下这个物品？", theMessage, "", Dialog::BUTTONS_YES_NO);
-	aComfirmDialog->mLawnYesButton->mLabel = TodStringTranslate("[DIALOG_BUTTON_YES]");
-	aComfirmDialog->mLawnNoButton->mLabel = TodStringTranslate("[DIALOG_BUTTON_NO]");
+	DoDialog(Dialogs::DIALOG_ZEN_SELL, true, "[ZEN_SELL_HEADER]", theMessage, "", Dialog::BUTTONS_YES_NO);
 }
 
 Dialog* LawnApp::NewDialog(int theDialogId, bool isModal, const std::string& theDialogHeader, const std::string& theDialogLines, const std::string& theDialogFooter, int theButtonMode)
@@ -1193,7 +1182,7 @@ bool LawnApp::KillDialog(int theDialogId)
 {
 	if (SexyAppBase::KillDialog(theDialogId))
 	{
-		if (mDialogMap.size() == 0)
+		if (mDialogMap.size() == 0 && mWidgetManager->mFocusWidget == nullptr)
 		{
 			if (mBoard)
 			{
@@ -2298,7 +2287,7 @@ int LawnApp::GetCurrentChallengeIndex()
 	return static_cast<int>(mGameMode) - static_cast<int>(GameMode::GAMEMODE_SURVIVAL_NORMAL_STAGE_1);
 }
 
-ChallengeDefinition& LawnApp::GetCurrentChallengeDef()
+const ChallengeDefinition& LawnApp::GetCurrentChallengeDef()
 {
 	return GetChallengeDefinition(GetCurrentChallengeIndex());
 }
